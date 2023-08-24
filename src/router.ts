@@ -4,9 +4,9 @@ import {
     Middleware,
     MiddlewareFn,
     MiddlewareObj,
-} from "./deps.deno.ts";
+} from './deps.deno.ts'
 
-type MaybePromise<T> = T | Promise<T>;
+type MaybePromise<T> = T | Promise<T>
 
 /**
  * A router lets you specify a number of middlewares, each of them identified by
@@ -37,8 +37,8 @@ type MaybePromise<T> = T | Promise<T>;
  * ```
  */
 export class Router<C extends Context> implements MiddlewareObj<C> {
-    public routeHandlers: Record<PropertyKey, Middleware<C>>;
-    private otherwiseHandler: Composer<C> | undefined;
+    public routeHandlers: Record<PropertyKey, Middleware<C>>
+    private otherwiseHandler: Composer<C> | undefined
 
     /**
      * Constructs a router with a routing function and optionally some
@@ -50,15 +50,16 @@ export class Router<C extends Context> implements MiddlewareObj<C> {
      */
     constructor(
         private readonly router: (
-            ctx: C,
+            ctx: C
         ) => MaybePromise<PropertyKey | undefined>,
         routeHandlers:
             | Record<PropertyKey, Middleware<C>>
-            | Map<PropertyKey, Middleware<C>> = {},
+            | Map<PropertyKey, Middleware<C>> = {}
     ) {
-        this.routeHandlers = routeHandlers instanceof Map
-            ? Object.fromEntries(routeHandlers.entries())
-            : { ...routeHandlers };
+        this.routeHandlers =
+            routeHandlers instanceof Map
+                ? Object.fromEntries(routeHandlers.entries())
+                : { ...routeHandlers }
     }
 
     /**
@@ -69,10 +70,13 @@ export class Router<C extends Context> implements MiddlewareObj<C> {
      * @param route The route for which to register the middleware
      * @param middleware The middleware to register
      */
-    route(route: PropertyKey, ...middleware: Array<Middleware<C>>) {
-        const composer = new Composer(...middleware);
-        this.routeHandlers[route] = composer;
-        return composer;
+    route(
+        route: NonNullable<Awaited<ReturnType<typeof this.router>>>,
+        ...middleware: Array<Middleware<C>>
+    ) {
+        const composer = new Composer(...middleware)
+        this.routeHandlers[route] = composer
+        return composer
     }
 
     /**
@@ -84,14 +88,16 @@ export class Router<C extends Context> implements MiddlewareObj<C> {
      * @param middleware Middleware to run if no route matches
      */
     otherwise(...middleware: Array<Middleware<C>>) {
-        return this.otherwiseHandler = new Composer(...middleware);
+        return (this.otherwiseHandler = new Composer(...middleware))
     }
 
     middleware(): MiddlewareFn<C> {
-        return new Composer<C>().route(
-            (ctx) => this.router(ctx),
-            this.routeHandlers,
-            this.otherwiseHandler,
-        ).middleware();
+        return new Composer<C>()
+            .route(
+                ctx => this.router(ctx),
+                this.routeHandlers,
+                this.otherwiseHandler
+            )
+            .middleware()
     }
 }
